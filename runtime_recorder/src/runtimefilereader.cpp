@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include "runtimefile_types.h"
+#include "blockreader.h"
 
 class RuntimeFileReader::Imp
 {
@@ -22,119 +23,162 @@ RuntimeFileReader::~RuntimeFileReader()
 
 }
 
-bool RuntimeFileReader::read(const std::string &file_path)
+static std::shared_ptr<DataImage> toDataImage(std::shared_ptr<BlockNode> block_node)
 {
-    std::ifstream stream(file_path, std::ios::in|std::ios::binary);
-    if(stream.bad()){
-        return false;
-    }
-
-    FileHeader file_header;
-    stream.read(reinterpret_cast<char *>(&file_header), sizeof(file_header));
-    if(std::string(file_header.tag) != std::string(FILE_TAG)){
-        return false;
-    }
-    imp_->version = file_header.version;
-    if(imp_->version != std::string(CURRENT_VERSION)){
-        return false;
-    }
-
-    while(stream.peek() != std::ifstream::traits_type::eof())
+    std::shared_ptr<DataImage> data_image = std::make_shared<DataImage>();
+    for(std::shared_ptr<BlockNode> child : block_node->children())
     {
-        BlockHeader block_header;
-        stream.read(reinterpret_cast<char *>(&block_header), sizeof(block_header));
-        switch (block_header.block_type)
+        switch (child->blockTag())
         {
-        case BT_CallImage:
+        case RTB_Data:
         {
-            std::shared_ptr<CallImage> call_image = std::make_shared<CallImage>();
-            stream.read(call_image->fun_name, sizeof(call_image->fun_name));
-            stream.read(reinterpret_cast<char *>(&call_image->timestamp),
-                        sizeof(call_image->timestamp));
-            stream.read(reinterpret_cast<char *>(&call_image->thread_id),
-                        sizeof(call_image->thread_id));
-
-            int32_t param_count = 0;
-            stream.read(reinterpret_cast<char *>(&param_count), sizeof(param_count));
-
-            std::vector<std::shared_ptr<Param>> arg_list(param_count);
-            for(int i = 0; i < param_count; ++i){
-                std::shared_ptr<Param> param = std::make_shared<Param>();
-                ParamBlock param_block;
-                stream.read(reinterpret_cast<char *>(&param_block), sizeof (param_block));
-                memcpy(param->type_name, param_block.type_name, sizeof(param_block.type_name));
-
-                int param_data_size = param_block.header.byte_size - sizeof(ParamBlock);
-                param->data.resize(param_data_size);
-                stream.read(param->data.data(), param->data.size());
-
-                if(param_block.header.block_type == BT_ParamReturn){
-                    call_image->ret_param = param;
-                }
-                else if(param_block.header.block_type == BT_ParamArg){
-                    arg_list[param_block.index] = param;
-                }
-                else{
-                    assert(false);
-                }
-            }
-
-            for(auto param : arg_list){
-                call_image->arg_list.push_back(param);
-            }
-
-            imp_->call_image_list.push_back(call_image);
+            data_image->next = toDataImage(child);
             break;
         }
-        case BT_ClassCallImage:
+        case RTB_DataHeader:
         {
-            std::shared_ptr<ClassCallImage> class_call_image = std::make_shared<ClassCallImage>();
-            class_call_image->call_image = std::make_shared<CallImage>();
-            stream.read(class_call_image->class_name, sizeof(class_call_image->class_name));
-            stream.read(reinterpret_cast<char *>(&class_call_image->instance_id),
-                        sizeof(class_call_image->instance_id));
-            stream.read(reinterpret_cast<char *>(&class_call_image->method_type),
-                        sizeof(class_call_image->method_type));
-            stream.read(class_call_image->call_image->fun_name, sizeof(class_call_image->call_image->fun_name));
-            stream.read(reinterpret_cast<char *>(&class_call_image->call_image->timestamp),
-                        sizeof(class_call_image->call_image->timestamp));
-            stream.read(reinterpret_cast<char *>(&class_call_image->call_image->thread_id),
-                        sizeof(class_call_image->call_image->thread_id));
-
-            int32_t param_count = 0;
-            stream.read(reinterpret_cast<char *>(&param_count), sizeof(param_count));
-
-            std::vector<std::shared_ptr<Param>> arg_list(param_count);
-            for(int i = 0; i < param_count; ++i){
-                std::shared_ptr<Param> param = std::make_shared<Param>();
-                ParamBlock param_block;
-                stream.read(reinterpret_cast<char *>(&param_block), sizeof (param_block));
-                memcpy(param->type_name, param_block.type_name, sizeof(param_block.type_name));
-
-                int param_data_size = param_block.header.byte_size - sizeof(ParamBlock);
-                param->data.resize(param_data_size);
-                stream.read(param->data.data(), param->data.size());
-
-                if(param_block.header.block_type == BT_ParamReturn){
-                    class_call_image->call_image->ret_param = param;
-                }
-                else if(param_block.header.block_type == BT_ParamArg){
-                    arg_list[param_block.index] = param;
-                }
-                else{
-                    assert(false);
-                }
-            }
-
-            for(auto param : arg_list){
-                class_call_image->call_image->arg_list.push_back(param);
-            }
-
-            imp_->class_call_image_list.push_back(class_call_image);
+            DataHeader data_header = *reinterpret_cast<const DataHeader *>(child->blockData().data());
+            strcpy_s(data_image->type_name, data_header.type_name);
+            strcpy_s(data_image->var_name, data_header.var_name);
+            break;
+        }
+        case RTB_DataBody:
+        {
+            data_image->data = child->blockData();
             break;
         }
         default:
+            assert(false);
             break;
+        }
+    }
+
+    return data_image;
+}
+
+static std::shared_ptr<CallImage> toCallImage(std::shared_ptr<BlockNode> block_node)
+{
+    std::shared_ptr<CallImage> call_image = std::make_shared<CallImage>();
+    for(std::shared_ptr<BlockNode> child : block_node->children())
+    {
+        switch(child->blockTag())
+        {
+        case RTB_CallImageHeader:
+        {
+            CallImageHeader call_image_header = *reinterpret_cast<const CallImageHeader *>(child->blockData().data());
+            strcpy_s(call_image->fun_name, call_image_header.fun_name);
+            call_image->timestamp = call_image_header.timestamp;
+            call_image->thread_id = call_image_header.thread_id;
+            break;
+        }
+        case RTB_ReturnData:
+        {
+            call_image->ret = toDataImage(*child->children().begin());
+            break;
+        }
+        case RTB_ArgData:
+        {
+            for(std::shared_ptr<BlockNode> arg_block : child->children())
+            {
+                call_image->arg_list.push_back(toDataImage(arg_block));
+            }
+
+            break;
+        }
+        case RTB_OtherData:
+        {
+            for(std::shared_ptr<BlockNode> data_block : child->children())
+            {
+                call_image->data_list.push_back(toDataImage(data_block));
+            }
+
+            break;
+        }
+        default:
+            assert(false);
+            break;
+        }
+    }
+
+    return call_image;
+}
+
+static std::shared_ptr<ClassCallImage> toClassCallImage(std::shared_ptr<BlockNode> block_node)
+{
+    std::shared_ptr<ClassCallImage> class_call_image = std::make_shared<ClassCallImage>();
+    std::shared_ptr<CallImage> call_image = std::make_shared<CallImage>();
+    class_call_image->call_image = call_image;
+
+    for(std::shared_ptr<BlockNode> child : block_node->children())
+    {
+        switch(child->blockTag())
+        {
+        case RTB_CallImageHeader:
+        {
+            ClassCallImageHeader class_call_image_header =
+                    *reinterpret_cast<const ClassCallImageHeader *>(child->blockData().data());
+            strcpy_s(class_call_image->class_name, class_call_image_header.class_name);
+            class_call_image->instance_id = class_call_image_header.instance_id;
+
+            CallImageHeader &call_image_header = class_call_image_header.call_image_header;
+            strcpy_s(call_image->fun_name, call_image_header.fun_name);
+            call_image->timestamp = call_image_header.timestamp;
+            call_image->thread_id = call_image_header.thread_id;
+            break;
+        }
+        case RTB_ReturnData:
+        {
+            call_image->ret = toDataImage(*child->children().begin());
+            break;
+        }
+        case RTB_ArgData:
+        {
+            for(std::shared_ptr<BlockNode> arg_block : child->children())
+            {
+                call_image->arg_list.push_back(toDataImage(arg_block));
+            }
+
+            break;
+        }
+        case RTB_OtherData:
+        {
+            for(std::shared_ptr<BlockNode> data_block : child->children())
+            {
+                call_image->data_list.push_back(toDataImage(data_block));
+            }
+
+            break;
+        }
+        default:
+            assert(false);
+            break;
+        }
+    }
+
+    return class_call_image;
+}
+
+bool RuntimeFileReader::read(const std::string &file_path)
+{
+    BlockReader block_reader;
+    if(!block_reader.open(file_path)){
+        return false;
+    }
+
+    imp_->version = block_reader.version();
+    std::list<std::shared_ptr<BlockNode>> block_node_list = block_reader.readAll();
+
+    for(std::shared_ptr<BlockNode> block_node : block_node_list)
+    {
+        if(block_node->blockTag() == RTB_CallImage){
+            imp_->call_image_list.push_back(toCallImage(block_node));
+        }
+        else if(block_node->blockTag() == RTB_ClassCallImage){
+            imp_->class_call_image_list.push_back(toClassCallImage(block_node));
+        }
+        else{
+            assert(false);
+            continue;
         }
     }
 

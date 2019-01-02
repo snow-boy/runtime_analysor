@@ -1,17 +1,22 @@
-#include <runtime_recorder/callimagebuilder.h>
-#include <runtime_recorder/classcallimagebuilder.h>
 #include <runtime_recorder/runtimefilewriter.h>
 #include <runtime_recorder/runtimefilereader.h>
+#include <runtime_recorder/runtime_utils.h>
+#include <runtime_recorder/dataendec.h>
 
 int main(int argc, char **argv)
 {
-    std::string file_path("e:/test.data");
+    std::string file_path("test.data");
 
     {
         RuntimeFileWriter file_writer;
         file_writer.open(file_path);
-        file_writer.writeClassCallImage(ClassCallImageBuilder("TestClass", argv).buildMethod<void, int>("test", 12));
-        file_writer.writeCallImage(CallImageBuilder<void, int>("test").buildCallImage(100));
+
+        std::shared_ptr<CallImage> call_image = allocCallImage("main");
+        int ret = 0;
+        call_image->ret = EncodeData(ret);
+        call_image->arg_list.push_back(EncodeData(argc));
+        file_writer.writeCallImage(call_image);
+
         file_writer.close();
     }
 

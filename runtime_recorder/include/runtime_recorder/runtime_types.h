@@ -6,10 +6,12 @@
 #include <vector>
 #include <memory>
 
-struct Param
+struct DataImage
 {
     char type_name[64];
+    char var_name[64];
     std::vector<char> data;
+    std::shared_ptr<DataImage> next;
 };
 
 struct CallImage
@@ -17,23 +19,15 @@ struct CallImage
     char fun_name[64];
     int64_t timestamp;
     uint32_t thread_id;
-    std::shared_ptr<Param> ret_param;
-    std::list<std::shared_ptr<Param>> arg_list;
-};
-
-enum MethodType
-{
-    MT_Unknow = 0,
-    MT_Constructure = 1,
-    MT_Destructure = 2,
-    MT_Method = 3
+    std::shared_ptr<DataImage> ret;
+    std::list<std::shared_ptr<DataImage>> arg_list;
+    std::list<std::shared_ptr<DataImage>> data_list;
 };
 
 struct ClassCallImage
 {
     char class_name[64];
     uint64_t instance_id;
-    int32_t method_type;
     std::shared_ptr<CallImage> call_image;
 };
 

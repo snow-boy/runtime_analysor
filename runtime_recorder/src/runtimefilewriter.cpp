@@ -2,12 +2,14 @@
 
 #include <fstream>
 #include <iostream>
+#include <cassert>
 #include "runtimefile_types.h"
+#include "blockwriter.h"
 
 class RuntimeFileWriter::Imp
 {
 public:
-    std::ofstream stream;
+    BlockWriter block_writer;
 };
 
 RuntimeFileWriter::RuntimeFileWriter()
@@ -22,118 +24,116 @@ RuntimeFileWriter::~RuntimeFileWriter()
 
 bool RuntimeFileWriter::open(const std::string &file_path)
 {
-    imp_->stream.open(file_path);
-    if(imp_->stream.bad()){
-        return false;
-    }
-
-    FileHeader header;
-    memset(&header, 0, sizeof(header));
-
-    std::string tag = FILE_TAG;
-    strcpy_s(header.tag, tag.data());
-
-    std::string version = CURRENT_VERSION;
-    strcpy_s(header.version, version.data());
-
-    imp_->stream.write(reinterpret_cast<char *>(&header), sizeof(header));
-
-    return true;
+    return imp_->block_writer.open(file_path);
 }
 
 void RuntimeFileWriter::close()
 {
-    imp_->stream.close();
+    imp_->block_writer.close();
 }
 
-static std::shared_ptr<ParamBlock> buildParamBlock(std::shared_ptr<Param> param, BlockType block_type, int index)
+static std::shared_ptr<BlockNode> makeDataBlock(std::shared_ptr<DataImage> data_image)
 {
-    int data_size = static_cast<int>(sizeof(ParamBlock) + param->data.size());
-    std::shared_ptr<ParamBlock> param_block(
-                reinterpret_cast<ParamBlock *>(malloc(data_size)),
-                [](ParamBlock *block){ free(block); });
+    std::shared_ptr<BlockNode> data_block = std::make_shared<BlockNode>(RTB_Data);
 
-    param_block->header.block_type = block_type;
-    param_block->header.byte_size = data_size;
-    param_block->index  = index;
-    memcpy(param_block->type_name, param->type_name, sizeof(param->type_name));
-    memcpy(param_block->data, param->data.data(), param->data.size());
+    {
+        std::shared_ptr<BlockNode> data_header_block = std::make_shared<BlockNode>(RTB_DataHeader);
+        DataHeader header;
+        strcpy_s(header.type_name, data_image->type_name);
+        strcpy_s(header.var_name, data_image->var_name);
+        data_header_block->setData(reinterpret_cast<char *>(&header), sizeof(header));
+        data_block->appendChild(data_header_block);
+    }
 
-    return param_block;
+    {
+        std::shared_ptr<BlockNode> data_body_block = std::make_shared<BlockNode>(RTB_DataBody);
+        data_body_block->setData(data_image->data);
+        data_block->appendChild(data_body_block);
+    }
+
+    if(data_image->next != nullptr){
+        data_block->appendChild(makeDataBlock(data_image->next));
+    }
+
+    return data_block;
 }
 
 void RuntimeFileWriter::writeCallImage(std::shared_ptr<CallImage> call_image)
 {
-    std::unique_ptr<CallImageBlock> image_block_ptr = std::make_unique<CallImageBlock>();
-    memcpy(image_block_ptr->fun_name, call_image->fun_name, sizeof(call_image->fun_name));
-    image_block_ptr->timestamp = call_image->timestamp;
-    image_block_ptr->thread_id = call_image->thread_id;
-    image_block_ptr->header.block_type = BT_CallImage;
-    image_block_ptr->header.byte_size = sizeof(CallImageBlock);
-    image_block_ptr->param_count = 0;
-
-    std::vector<std::shared_ptr<ParamBlock>> param_blocks;
-
-    if(call_image->ret_param != nullptr)
+    assert(imp_->block_writer.isOpen());
+    std::shared_ptr<BlockNode> call_image_node = std::make_shared<BlockNode>(RTB_CallImage);
     {
-        std::shared_ptr<ParamBlock> param_block =
-                buildParamBlock(call_image->ret_param, BT_ParamReturn, static_cast<int>(param_blocks.size()));
-        param_blocks.push_back(param_block);
-        image_block_ptr->header.byte_size += param_block->header.byte_size;
-        image_block_ptr->param_count++;
+        std::shared_ptr<BlockNode> call_image_header_node = std::make_shared<BlockNode>(RTB_CallImageHeader);
+        CallImageHeader call_image_header;
+        strcpy_s(call_image_header.fun_name, call_image->fun_name);
+        call_image_header.thread_id = call_image->thread_id;
+        call_image_header.timestamp = call_image->timestamp;
+        call_image_header_node->setData(reinterpret_cast<char *>(&call_image_header), sizeof(call_image_header));
+        call_image_node->appendChild(call_image_header_node);
     }
 
-    for(auto param : call_image->arg_list){
-        std::shared_ptr<ParamBlock> param_block = buildParamBlock(
-                    param, BT_ParamArg, static_cast<int>(param_blocks.size()));
-        param_blocks.push_back(param_block);
-        image_block_ptr->header.byte_size += param_block->header.byte_size;
-        image_block_ptr->param_count++;
+    if(call_image->ret != nullptr)
+    {
+        std::shared_ptr<BlockNode> ret_data_node = std::make_shared<BlockNode>(RTB_ReturnData);
+        ret_data_node->appendChild(makeDataBlock(call_image->ret));
+        call_image_node->appendChild(ret_data_node);
     }
 
-    imp_->stream.write(reinterpret_cast<char *>(image_block_ptr.get()), sizeof (CallImageBlock));
-    for(std::shared_ptr<ParamBlock> param_block : param_blocks){
-        imp_->stream.write(reinterpret_cast<char *>(param_block.get()), param_block->header.byte_size);
+    for(std::shared_ptr<DataImage> data_image : call_image->arg_list)
+    {
+        std::shared_ptr<BlockNode> arg_data_node = std::make_shared<BlockNode>(RTB_ArgData);
+        arg_data_node->appendChild(makeDataBlock(data_image));
+        call_image_node->appendChild(arg_data_node);
     }
+
+    for(std::shared_ptr<DataImage> data_image : call_image->data_list)
+    {
+        std::shared_ptr<BlockNode> arg_data_node = std::make_shared<BlockNode>(RTB_OtherData);
+        arg_data_node->appendChild(makeDataBlock(data_image));
+        call_image_node->appendChild(arg_data_node);
+    }
+
+    imp_->block_writer.writeBlock(call_image_node);
 }
 
 void RuntimeFileWriter::writeClassCallImage(std::shared_ptr<ClassCallImage> class_call_image)
 {
-    std::unique_ptr<ClassCallImageBlock> image_block_ptr = std::make_unique<ClassCallImageBlock>();
-    memcpy(image_block_ptr->class_name,
-           class_call_image->class_name, sizeof(class_call_image->class_name));
-    image_block_ptr->instance_id = class_call_image->instance_id;
-    memcpy(image_block_ptr->fun_name,
-           class_call_image->call_image->fun_name, sizeof(class_call_image->call_image->fun_name));
-    image_block_ptr->method_type = class_call_image->method_type;
-    image_block_ptr->timestamp = class_call_image->call_image->timestamp;
-    image_block_ptr->thread_id = class_call_image->call_image->thread_id;
-    image_block_ptr->header.block_type = BT_ClassCallImage;
-    image_block_ptr->header.byte_size = sizeof(ClassCallImageBlock);
-    image_block_ptr->param_count = 0;
-
-    std::vector<std::shared_ptr<ParamBlock>> param_blocks;
-
-    if(class_call_image->call_image->ret_param != nullptr)
+    std::shared_ptr<CallImage> call_image = class_call_image->call_image;
+    std::shared_ptr<BlockNode> call_image_node = std::make_shared<BlockNode>(RTB_CallImage);
     {
-        std::shared_ptr<ParamBlock> param_block =
-                buildParamBlock(class_call_image->call_image->ret_param, BT_ParamReturn,
-                                static_cast<int>(param_blocks.size()));
-        param_blocks.push_back(param_block);
-        image_block_ptr->header.byte_size += param_block->header.byte_size;
-        image_block_ptr->param_count++;
+        std::shared_ptr<BlockNode> call_image_header_node = std::make_shared<BlockNode>(RTB_CallImageHeader);
+        ClassCallImageHeader class_call_image_header;
+        strcpy_s(class_call_image_header.class_name, class_call_image->class_name);
+        class_call_image_header.instance_id = class_call_image->instance_id;
+
+        CallImageHeader &call_image_header = class_call_image_header.call_image_header;
+        strcpy_s(call_image_header.fun_name, call_image->fun_name);
+        call_image_header.thread_id = call_image->thread_id;
+        call_image_header.timestamp = call_image->timestamp;
+        call_image_header_node->setData(reinterpret_cast<char *>(&class_call_image_header), sizeof(class_call_image_header));
+        call_image_node->appendChild(call_image_header_node);
     }
 
-    for(auto param : class_call_image->call_image->arg_list){
-        std::shared_ptr<ParamBlock> param_block = buildParamBlock(param, BT_ParamArg,
-                                      static_cast<int>(param_blocks.size()));
-        param_blocks.push_back(param_block);
-        image_block_ptr->header.byte_size += param_block->header.byte_size;
-        image_block_ptr->param_count++;
+    if(call_image->ret != nullptr)
+    {
+        std::shared_ptr<BlockNode> ret_data_node = std::make_shared<BlockNode>(RTB_ReturnData);
+        ret_data_node->appendChild(makeDataBlock(call_image->ret));
+        call_image_node->appendChild(ret_data_node);
     }
 
-    imp_->stream.write(reinterpret_cast<char *>(image_block_ptr.get()), sizeof (ClassCallImageBlock));
-    for(std::shared_ptr<ParamBlock> param_block : param_blocks){
-        imp_->stream.write(reinterpret_cast<char *>(param_block.get()), param_block->header.byte_size);
+    for(std::shared_ptr<DataImage> data_image : call_image->arg_list)
+    {
+        std::shared_ptr<BlockNode> arg_data_node = std::make_shared<BlockNode>(RTB_ArgData);
+        arg_data_node->appendChild(makeDataBlock(data_image));
+        call_image_node->appendChild(arg_data_node);
     }
+
+    for(std::shared_ptr<DataImage> data_image : call_image->data_list)
+    {
+        std::shared_ptr<BlockNode> arg_data_node = std::make_shared<BlockNode>(RTB_OtherData);
+        arg_data_node->appendChild(makeDataBlock(data_image));
+        call_image_node->appendChild(arg_data_node);
+    }
+
+    imp_->block_writer.writeBlock(call_image_node);
 }

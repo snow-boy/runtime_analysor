@@ -4,63 +4,53 @@
 #include <stdint.h>
 #include "runtime_types.h"
 
-#define FILE_TAG "@runtime@"
-#define CURRENT_VERSION "0.0.0.1"
-
 #pragma pack(push, 1)
 
-struct FileHeader
+enum RTBlockTag
 {
-    char tag[16];
-    char version[64];
+    RTB_Unknow = 0,
+
+    RTB_CallImage = 10,
+    RTB_CallImageHeader = 11,
+
+    RTB_ClassCallImage = 20,
+    RTB_ClassCallImageHeader = 21,
+
+    RTB_ReturnData = 30,
+    RTB_ArgData = 40,
+    RTB_OtherData = 50,
+
+    RTB_Data = 60,
+    RTB_DataHeader = 61,
+    RTB_DataBody = 62
 };
 
-enum BlockType
+struct DataHeader
 {
-    BT_Unknow = 0,
-    BT_CallImage = 1,
-    BT_ClassCallImage = 2,
-    BT_ParamReturn = 3,
-    BT_ParamArg = 4
-};
-
-struct BlockHeader
-{
-    int32_t block_type;
-    int32_t byte_size;
-};
-
-struct ParamBlock
-{
-    BlockHeader header;
-    int32_t index;
     char type_name[64];
-    char data[0];
+    char var_name[64];
 };
 
-struct CallImageBlock
+struct CallImageHeader
 {
-    BlockHeader header;
     char fun_name[64];
     int64_t timestamp;
     uint32_t thread_id;
-    int32_t param_count;
-    //ParamBlock params[0];
 };
 
-struct ClassCallImageBlock
+struct ClassCallImageHeader
 {
-    BlockHeader header;
     char class_name[64];
     uint64_t instance_id;
-    int32_t method_type;
-    char fun_name[64];
-    int64_t timestamp;
-    uint32_t thread_id;
-    int32_t param_count;
-    //ParamBlock params[0];
+    CallImageHeader call_image_header;
 };
 
 #pragma pack(pop)
+
+// //////////// //
+// BlockHeader  //
+// ///////////  //
+// BlockBody // //
+//////////////////
 
 #endif // RUNTIMEFILE_TYPES_H
