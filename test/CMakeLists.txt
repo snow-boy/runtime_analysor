@@ -8,5 +8,5 @@ add_executable(test_runtime ${TEST_SRC})
 
 target_link_libraries(test_runtime
     PRIVATE
-       runtime_recorder
+       rt_serializer
 )
