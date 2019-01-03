@@ -1,7 +1,17 @@
 #include <runtime_recorder/runtimefilewriter.h>
 #include <runtime_recorder/runtimefilereader.h>
-#include <runtime_recorder/runtime_utils.h>
 #include <runtime_recorder/dataendec.h>
+#include <runtime_recorder/callimage_ex.h>
+#include <runtime_recorder/classcallimage_ex.h>
+
+class TestA
+{
+public:
+    void test(int a)
+    {
+
+    }
+};
 
 int main(int argc, char **argv)
 {
@@ -11,11 +21,17 @@ int main(int argc, char **argv)
         RuntimeFileWriter file_writer;
         file_writer.open(file_path);
 
-        std::shared_ptr<CallImage> call_image = allocCallImage("main");
+        std::shared_ptr<CallImageEx> call_image = std::make_shared<CallImageEx>("main");
         int ret = 0;
-        call_image->ret = EncodeData(ret);
-        call_image->arg_list.push_back(EncodeData(argc));
-        file_writer.writeCallImage(call_image);
+        call_image->setReturn(MakeData(ret));
+        call_image->addArg(MakeData(argc));
+        file_writer.write(call_image);
+
+        TestA test_a;
+        std::shared_ptr<ClassCallImageEx> class_call_image = std::make_shared<ClassCallImageEx>("test", &test_a);
+        int arg = 2;
+        class_call_image->addArg(MakeData(arg));
+        file_writer.write(class_call_image);
 
         file_writer.close();
     }

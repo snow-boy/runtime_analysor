@@ -92,7 +92,7 @@ size_t BlockNode::calcBodySize()
 
     for(std::shared_ptr<BlockNode> block : children_){
         size += block->calcBodySize();
-        size += sizeof(BlockNode);
+        size += sizeof(BlockHeader);
     }
 
     return size;
@@ -107,6 +107,7 @@ void BlockNode::updateBlockHeader()
 size_t BlockNode::fromBuffer(const std::vector<char> &buffer, size_t offset)
 {
     *block_header_ = *reinterpret_cast<const BlockHeader *>(buffer.data() + offset);
+    assert(block_header_->block_tag != -1);
     size_t current_offset = sizeof(BlockHeader) + offset;
     if(block_header_->data_size > 0){
         block_data_.resize(block_header_->data_size);

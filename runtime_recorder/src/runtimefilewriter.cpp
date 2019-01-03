@@ -58,7 +58,7 @@ static std::shared_ptr<BlockNode> makeDataBlock(std::shared_ptr<DataImage> data_
     return data_block;
 }
 
-void RuntimeFileWriter::writeCallImage(std::shared_ptr<CallImage> call_image)
+void RuntimeFileWriter::write(std::shared_ptr<CallImage> call_image)
 {
     assert(imp_->block_writer.isOpen());
     std::shared_ptr<BlockNode> call_image_node = std::make_shared<BlockNode>(RTB_CallImage);
@@ -96,12 +96,12 @@ void RuntimeFileWriter::writeCallImage(std::shared_ptr<CallImage> call_image)
     imp_->block_writer.writeBlock(call_image_node);
 }
 
-void RuntimeFileWriter::writeClassCallImage(std::shared_ptr<ClassCallImage> class_call_image)
+void RuntimeFileWriter::write(std::shared_ptr<ClassCallImage> class_call_image)
 {
     std::shared_ptr<CallImage> call_image = class_call_image->call_image;
-    std::shared_ptr<BlockNode> call_image_node = std::make_shared<BlockNode>(RTB_CallImage);
+    std::shared_ptr<BlockNode> call_image_node = std::make_shared<BlockNode>(RTB_ClassCallImage);
     {
-        std::shared_ptr<BlockNode> call_image_header_node = std::make_shared<BlockNode>(RTB_CallImageHeader);
+        std::shared_ptr<BlockNode> call_image_header_node = std::make_shared<BlockNode>(RTB_ClassCallImageHeader);
         ClassCallImageHeader class_call_image_header;
         strcpy_s(class_call_image_header.class_name, class_call_image->class_name);
         class_call_image_header.instance_id = class_call_image->instance_id;

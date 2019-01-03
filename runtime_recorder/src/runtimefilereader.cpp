@@ -113,7 +113,7 @@ static std::shared_ptr<ClassCallImage> toClassCallImage(std::shared_ptr<BlockNod
     {
         switch(child->blockTag())
         {
-        case RTB_CallImageHeader:
+        case RTB_ClassCallImageHeader:
         {
             ClassCallImageHeader class_call_image_header =
                     *reinterpret_cast<const ClassCallImageHeader *>(child->blockData().data());

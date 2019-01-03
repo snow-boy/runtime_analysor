@@ -13,8 +13,8 @@ public:
     bool open(const std::string &file_path);
     void close();
 
-    void writeCallImage(std::shared_ptr<CallImage> call_image);
-    void writeClassCallImage(std::shared_ptr<ClassCallImage> class_call_image);
+    void write(std::shared_ptr<CallImage> call_image);
+    void write(std::shared_ptr<ClassCallImage> class_call_image);
 
 private:
     class Imp;
