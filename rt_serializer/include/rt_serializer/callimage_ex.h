@@ -52,7 +52,11 @@ private:
     template<typename _T, typename _TypeName, typename _VarName, typename ..._Rest>
     std::shared_ptr<DataImage> buildDataImage(_T var, _TypeName type_name, _VarName var_name, _Rest ...rest)
     {
-        std::shared_ptr<DataImage> data_image = DataEndec(type_name, var_name).encode(var);
+        std::shared_ptr<DataImage> data_image = std::make_shared<DataImage>();
+        strcpy_s(data_image->type_name, std::string(type_name).data());
+        strcpy_s(data_image->var_name, std::string(var_name).data());
+
+        DataEncoder<_T>().encode(data_image, var);
         data_image->next = buildDataImage(rest...);
         return data_image;
     }
