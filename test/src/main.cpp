@@ -1,20 +1,22 @@
+#include <iostream>
+
 #include <rt_serializer/runtimefilewriter.h>
 #include <rt_serializer/runtimefilereader.h>
 #include <rt_serializer/dataendec.h>
 #include <rt_serializer/callimage_ex.h>
 #include <rt_serializer/classcallimage_ex.h>
 
-class TestA
+void test01(int argc, char **argv)
 {
-public:
-    void test(int a)
+    class TestA
     {
+    public:
+        void test(int a)
+        {
 
-    }
-};
+        }
+    };
 
-int main(int argc, char **argv)
-{
     std::string file_path("test.data");
 
     {
@@ -47,6 +49,11 @@ int main(int argc, char **argv)
         auto class_call_image_list = file_reader.classCallImageList();
         auto class_names = class_call_image_list.classList();
     }
+}
+
+int main(int argc, char **argv)
+{
+    test01(argc, argv);
 
     return 0;
 }
