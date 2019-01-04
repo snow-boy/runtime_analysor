@@ -49,10 +49,10 @@ public:
     }
 
 private:
-    template<typename _T, typename _Str, typename ..._Rest>
-    std::shared_ptr<DataImage> buildDataImage(_T var, _Str var_name, _Rest ...rest)
+    template<typename _T, typename _TypeName, typename _VarName, typename ..._Rest>
+    std::shared_ptr<DataImage> buildDataImage(_T var, _TypeName type_name, _VarName var_name, _Rest ...rest)
     {
-        std::shared_ptr<DataImage> data_image = DataEndec(typeid (var).name(), var_name).encode(var);
+        std::shared_ptr<DataImage> data_image = DataEndec(type_name, var_name).encode(var);
         data_image->next = buildDataImage(rest...);
         return data_image;
     }
@@ -63,6 +63,7 @@ private:
     }
 };
 
-#define MakeData(data) data, #data
+#define MakeData(data) data, typeid(data).name(), #data
+#define MakePtrData(data, size) std::pair<const void *, int>(data, size), typeid(data).name(), #data
 
 #endif // CALLIMAGE_EX_H
