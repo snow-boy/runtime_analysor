@@ -13,13 +13,13 @@ public:
 
     void sortByTime();
 
-    std::vector<uint32_t> threads();
+    std::vector<uint32_t> threads() const;
 
-    CallImageList getCallImagestByThread(uint32_t thread_id);
+    CallImageList getCallImagestByThread(uint32_t thread_id) const;
 
-    std::list<std::string> functions();
+    std::list<std::string> functions() const;
 
-    CallImageList getCallImagestByFunction(const std::string &fun_name);
+    CallImageList getCallImagestByFunction(const std::string &fun_name) const;
 };
 
 #endif // CALLIMAGELIST_H

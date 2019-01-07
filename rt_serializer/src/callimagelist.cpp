@@ -30,7 +30,7 @@ void CallImageList::sortByTime()
     }
 }
 
-std::vector<uint32_t> CallImageList::threads()
+std::vector<uint32_t> CallImageList::threads() const
 {
     std::set<uint32_t> thread_set;
     for(std::shared_ptr<CallImage> e : *this){
@@ -42,7 +42,7 @@ std::vector<uint32_t> CallImageList::threads()
     return all_threads;
 }
 
-CallImageList CallImageList::getCallImagestByThread(uint32_t thread_id)
+CallImageList CallImageList::getCallImagestByThread(uint32_t thread_id) const
 {
     CallImageList call_image_list;
 
@@ -55,7 +55,7 @@ CallImageList CallImageList::getCallImagestByThread(uint32_t thread_id)
     return call_image_list;
 }
 
-std::list<std::string> CallImageList::functions()
+std::list<std::string> CallImageList::functions() const
 {
     std::set<std::string> func_set;
     for(std::shared_ptr<CallImage> e : *this){
@@ -67,7 +67,7 @@ std::list<std::string> CallImageList::functions()
     return func_list;
 }
 
-CallImageList CallImageList::getCallImagestByFunction(const std::string &fun_name)
+CallImageList CallImageList::getCallImagestByFunction(const std::string &fun_name) const
 {
     CallImageList call_image_list;
 

@@ -30,7 +30,7 @@ void ClassCallImageList::sortByTime()
     }
 }
 
-std::vector<uint32_t> ClassCallImageList::threads()
+std::vector<uint32_t> ClassCallImageList::threads() const
 {
     std::set<uint32_t> thread_set;
     for(std::shared_ptr<ClassCallImage> e : *this){
@@ -42,7 +42,7 @@ std::vector<uint32_t> ClassCallImageList::threads()
     return all_threads;
 }
 
-ClassCallImageList ClassCallImageList::getCallImagesByThread(uint32_t thread_id)
+ClassCallImageList ClassCallImageList::getCallImagesByThread(uint32_t thread_id) const
 {
     ClassCallImageList call_image_list;
 
@@ -55,7 +55,7 @@ ClassCallImageList ClassCallImageList::getCallImagesByThread(uint32_t thread_id)
     return call_image_list;
 }
 
-std::list<std::string> ClassCallImageList::classList()
+std::list<std::string> ClassCallImageList::classList() const
 {
     std::set<std::string> class_set;
     for(std::shared_ptr<ClassCallImage> e : *this){
@@ -67,7 +67,7 @@ std::list<std::string> ClassCallImageList::classList()
     return class_list;
 }
 
-ClassCallImageList ClassCallImageList::getCallImagesByClass(const std::string &class_name)
+ClassCallImageList ClassCallImageList::getCallImagesByClass(const std::string &class_name) const
 {
     ClassCallImageList call_image_list;
 
@@ -80,7 +80,7 @@ ClassCallImageList ClassCallImageList::getCallImagesByClass(const std::string &c
     return call_image_list;
 }
 
-std::vector<uint64_t> ClassCallImageList::instances()
+std::vector<uint64_t> ClassCallImageList::instances() const
 {
     std::set<uint64_t> instance_set;
 
@@ -93,7 +93,7 @@ std::vector<uint64_t> ClassCallImageList::instances()
     return all_instance;
 }
 
-ClassCallImageList ClassCallImageList::getCallImagesByInstance(uint64_t instance_id)
+ClassCallImageList ClassCallImageList::getCallImagesByInstance(uint64_t instance_id) const
 {
     ClassCallImageList call_image_list;
 
@@ -106,7 +106,7 @@ ClassCallImageList ClassCallImageList::getCallImagesByInstance(uint64_t instance
     return call_image_list;
 }
 
-std::list<std::string> ClassCallImageList::functions()
+std::list<std::string> ClassCallImageList::functions() const
 {
     std::set<std::string> func_set;
     for(std::shared_ptr<ClassCallImage> e : *this){
@@ -118,7 +118,7 @@ std::list<std::string> ClassCallImageList::functions()
     return func_list;
 }
 
-ClassCallImageList ClassCallImageList::getCallImagestByFunction(const std::string &fun_name)
+ClassCallImageList ClassCallImageList::getCallImagestByFunction(const std::string &fun_name) const
 {
     ClassCallImageList call_image_list;
 

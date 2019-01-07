@@ -13,21 +13,21 @@ public:
 
     void sortByTime();
 
-    std::vector<uint32_t> threads();
+    std::vector<uint32_t> threads() const;
 
-    ClassCallImageList getCallImagesByThread(uint32_t thread_id);
+    ClassCallImageList getCallImagesByThread(uint32_t thread_id) const;
 
-    std::list<std::string> classList();
+    std::list<std::string> classList() const;
 
-    ClassCallImageList getCallImagesByClass(const std::string &class_name);
+    ClassCallImageList getCallImagesByClass(const std::string &class_name) const;
 
-    std::vector<uint64_t> instances();
+    std::vector<uint64_t> instances() const;
 
-    ClassCallImageList getCallImagesByInstance(uint64_t instance_id);
+    ClassCallImageList getCallImagesByInstance(uint64_t instance_id) const;
 
-    std::list<std::string> functions();
+    std::list<std::string> functions() const;
 
-    ClassCallImageList getCallImagestByFunction(const std::string &fun_name);
+    ClassCallImageList getCallImagestByFunction(const std::string &fun_name) const;
 };
 
 #endif // CLASSCALLIMAGELIST_H

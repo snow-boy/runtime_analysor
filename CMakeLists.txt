@@ -7,5 +7,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(rt_serializer)
 add_subdirectory(rt_raser)
+add_subdirectory(rt_invoker_builder)
 add_subdirectory(test)
 

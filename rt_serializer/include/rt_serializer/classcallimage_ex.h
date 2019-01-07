@@ -38,4 +38,6 @@ public:
     }
 };
 
+#define MakeClassCallImageEx(instance) std::make_shared<ClassCallImageEx>(__FUNCTION__, instance)
+
 #endif // CLASSCALLIMAGE_EX_H

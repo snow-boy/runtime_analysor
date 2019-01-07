@@ -67,6 +67,7 @@ private:
     }
 };
 
+#define MakeCallImageEx() std::make_shared<CallImageEx>(__FUNCTION__)
 #define MakeData(data) data, typeid(data).name(), #data
 #define MakePtrData(data, size) std::pair<const void *, int>(data, size), typeid(data).name(), #data
 

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cassert>
+#include <map>
+#include <functional>
 
 #include <rt_serializer/runtimefilewriter.h>
 #include <rt_serializer/runtimefilereader.h>
@@ -52,21 +54,23 @@ void test01(int argc, char **argv)
     }
 }
 
+namespace aa{
 
 class A
 {
 public:
     void test1(int a)
     {
-        std::cout << __FUNCTION__ << " " << a << std::endl;
+        std::cout << __FUNCDNAME__ << " " << a << std::endl;
     }
 
     void test2(float a)
     {
-        std::cout << __FUNCTION__ << " " << a << std::endl;
+        std::cout << __FUNCDNAME__ << " " << a << std::endl;
     }
 };
 
+}
 
 template <>
 struct DataDecoder<int>
@@ -82,10 +86,10 @@ class ClassInvoker
 {};
 
 template<>
-class ClassInvoker<A>
+class ClassInvoker<aa::A>
 {
 public:
-    ClassInvoker<A>(A *instance):
+    ClassInvoker<aa::A>(aa::A *instance):
         instance_(instance)
     {}
 
@@ -94,12 +98,12 @@ public:
         do
         {
             if(std::string(class_call_image->call_image->fun_name) == "A::test1"){
-                instance_->A::test1(DataDecoder<int>().decode(*class_call_image->call_image->arg_list.begin()));
+                instance_->aa::A::test1(DataDecoder<int>().decode(*class_call_image->call_image->arg_list.begin()));
                 break;
             }
 
             if(std::string(class_call_image->call_image->fun_name) == "A::test2"){
-                instance_->A::test1(DataDecoder<float>().decode(*class_call_image->call_image->arg_list.begin()));
+                instance_->aa::A::test1(DataDecoder<float>().decode(*class_call_image->call_image->arg_list.begin()));
                 break;
             }
 
@@ -109,7 +113,38 @@ public:
     }
 
 private:
-    A *instance_;
+    aa::A *instance_;
+};
+
+void invokeCall(std::shared_ptr<CallImage> call_image)
+{
+
+}
+
+class AutoInvoker
+{
+public:
+    template<typename T>
+    void addInstance(T *instance)
+    {
+        instance_map_[typeid (T).name()] = [=](std::shared_ptr<ClassCallImage> call_image){
+            ClassInvoker<T>(instance)->invoke(call_image);
+        };
+    }
+
+    void invoke(std::shared_ptr<ClassCallImage> call_image)
+    {
+        assert(instance_map_.count(call_image->class_name) > 0);
+        instance_map_[call_image->class_name](call_image);
+    }
+
+    void invoke(std::shared_ptr<CallImage> call_image)
+    {
+        invokeCall(call_image);
+    }
+
+private:
+    std::map<std::string, std::function<void (std::shared_ptr<ClassCallImage>)>> instance_map_;
 };
 
 template<void * _Addr>
@@ -124,18 +159,46 @@ struct Ad
 const char *str = "A::test1";
 
 
+template <typename T>
+void invoke(T *instance, std::shared_ptr<ClassCallImage> call_image)
+{
+    ClassInvoker<T>(instance).invoke(call_image);
+}
+
+void invoke(std::shared_ptr<CallImage> call_image)
+{
+//    do
+//    {
+//        if(std::string(call_image->fun_name) == "A::test1"){
+//            A::test1(DataDecoder<int>().decode(*class_call_image->call_image->arg_list.begin()));
+//            break;
+//        }
+
+//        if(std::string(class_call_image->call_image->fun_name) == "A::test2"){
+//            instance_->aa::A::test1(DataDecoder<float>().decode(*class_call_image->call_image->arg_list.begin()));
+//            break;
+//        }
+
+//        assert(false);
+
+//    }while(0);
+}
+
 int main(int argc, char **argv)
 {
 //    test01(argc, argv);
 
-    A a;
+    std::cout << __FUNCDNAME__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
+
+    aa::A a;
 
     {
         std::shared_ptr<ClassCallImageEx> call_image = std::make_shared<ClassCallImageEx>("A::test1", &a);
         int d = 10;
         call_image->addArg(MakeData(d));
 
-        ClassInvoker<A> invoker(&a);
+        ClassInvoker<aa::A> invoker(&a);
         invoker.invoke(call_image);
     }
 
