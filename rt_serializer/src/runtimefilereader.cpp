@@ -38,8 +38,8 @@ static std::shared_ptr<DataImage> toDataImage(std::shared_ptr<BlockNode> block_n
         case RTB_DataHeader:
         {
             DataHeader data_header = *reinterpret_cast<const DataHeader *>(child->blockData().data());
-            strcpy_s(data_image->type_name, data_header.type_name);
-            strcpy_s(data_image->var_name, data_header.var_name);
+            data_image->type_name = data_header.type_name;
+            data_image->var_name = data_header.var_name;
             break;
         }
         case RTB_DataBody:
@@ -66,7 +66,7 @@ static std::shared_ptr<CallImage> toCallImage(std::shared_ptr<BlockNode> block_n
         case RTB_CallImageHeader:
         {
             CallImageHeader call_image_header = *reinterpret_cast<const CallImageHeader *>(child->blockData().data());
-            strcpy_s(call_image->fun_name, call_image_header.fun_name);
+            call_image->fun_name = call_image_header.fun_name;
             call_image->timestamp = call_image_header.timestamp;
             call_image->thread_id = call_image_header.thread_id;
             break;
@@ -117,11 +117,11 @@ static std::shared_ptr<ClassCallImage> toClassCallImage(std::shared_ptr<BlockNod
         {
             ClassCallImageHeader class_call_image_header =
                     *reinterpret_cast<const ClassCallImageHeader *>(child->blockData().data());
-            strcpy_s(class_call_image->class_name, class_call_image_header.class_name);
+            class_call_image->class_name = class_call_image_header.class_name;
             class_call_image->instance_id = class_call_image_header.instance_id;
 
             CallImageHeader &call_image_header = class_call_image_header.call_image_header;
-            strcpy_s(call_image->fun_name, call_image_header.fun_name);
+            call_image->fun_name = call_image_header.fun_name;
             call_image->timestamp = call_image_header.timestamp;
             call_image->thread_id = call_image_header.thread_id;
             break;

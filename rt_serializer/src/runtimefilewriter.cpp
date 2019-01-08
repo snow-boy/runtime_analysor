@@ -39,8 +39,8 @@ static std::shared_ptr<BlockNode> makeDataBlock(std::shared_ptr<DataImage> data_
     {
         std::shared_ptr<BlockNode> data_header_block = std::make_shared<BlockNode>(RTB_DataHeader);
         DataHeader header;
-        strcpy_s(header.type_name, data_image->type_name);
-        strcpy_s(header.var_name, data_image->var_name);
+        strcpy_s(header.type_name, data_image->type_name.data());
+        strcpy_s(header.var_name, data_image->var_name.data());
         data_header_block->setData(reinterpret_cast<char *>(&header), sizeof(header));
         data_block->appendChild(data_header_block);
     }
@@ -65,7 +65,7 @@ void RuntimeFileWriter::write(std::shared_ptr<CallImage> call_image)
     {
         std::shared_ptr<BlockNode> call_image_header_node = std::make_shared<BlockNode>(RTB_CallImageHeader);
         CallImageHeader call_image_header;
-        strcpy_s(call_image_header.fun_name, call_image->fun_name);
+        strcpy_s(call_image_header.fun_name, call_image->fun_name.data());
         call_image_header.thread_id = call_image->thread_id;
         call_image_header.timestamp = call_image->timestamp;
         call_image_header_node->setData(reinterpret_cast<char *>(&call_image_header), sizeof(call_image_header));
@@ -103,11 +103,11 @@ void RuntimeFileWriter::write(std::shared_ptr<ClassCallImage> class_call_image)
     {
         std::shared_ptr<BlockNode> call_image_header_node = std::make_shared<BlockNode>(RTB_ClassCallImageHeader);
         ClassCallImageHeader class_call_image_header;
-        strcpy_s(class_call_image_header.class_name, class_call_image->class_name);
+        strcpy_s(class_call_image_header.class_name, class_call_image->class_name.data());
         class_call_image_header.instance_id = class_call_image->instance_id;
 
         CallImageHeader &call_image_header = class_call_image_header.call_image_header;
-        strcpy_s(call_image_header.fun_name, call_image->fun_name);
+        strcpy_s(call_image_header.fun_name, call_image->fun_name.data());
         call_image_header.thread_id = call_image->thread_id;
         call_image_header.timestamp = call_image->timestamp;
         call_image_header_node->setData(reinterpret_cast<char *>(&class_call_image_header), sizeof(class_call_image_header));

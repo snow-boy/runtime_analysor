@@ -9,7 +9,7 @@ public:
     template<typename T>
     ClassCallImageEx(const std::string &fun_name, T *instance)
     {
-        strcpy_s(this->class_name, typeid (T).name());
+        this->class_name = typeid (T).name();
         this->instance_id = reinterpret_cast<uint64_t>(instance);
         this->call_image = std::make_shared<CallImageEx>(fun_name);
     }

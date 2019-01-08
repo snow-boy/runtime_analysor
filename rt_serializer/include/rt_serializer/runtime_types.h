@@ -8,15 +8,15 @@
 
 struct DataImage
 {
-    char type_name[64];
-    char var_name[64];
+    std::string type_name;
+    std::string var_name;
     std::vector<char> data;
     std::shared_ptr<DataImage> next;
 };
 
 struct CallImage
 {
-    char fun_name[64];
+    std::string fun_name;
     int64_t timestamp;
     uint32_t thread_id;
     std::shared_ptr<DataImage> ret;
@@ -26,7 +26,7 @@ struct CallImage
 
 struct ClassCallImage
 {
-    char class_name[64];
+    std::string class_name;
     uint64_t instance_id;
     std::shared_ptr<CallImage> call_image;
 };
