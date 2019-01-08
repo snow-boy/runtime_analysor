@@ -32,19 +32,19 @@ public:
     template<typename ... _Args>
     void setReturn(_Args ... args)
     {
-        this->ret = encodeData(args...);
+        this->ret = AutoEncoder().encode(args...);
     }
 
     template<typename ... _Args>
     void addArg(_Args ... args)
     {
-        this->arg_list.push_back(encodeData(args...));
+        this->arg_list.push_back(AutoEncoder().encode(args...));
     }
 
     template<typename ... _Args>
     void addData(_Args ... args)
     {
-        this->data_list.push_back(encodeData(args...));
+        this->data_list.push_back(AutoEncoder().encode(args...));
     }
 };
 

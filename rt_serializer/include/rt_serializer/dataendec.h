@@ -3,6 +3,7 @@
 
 #include <string>
 #include <tuple>
+#include <functional>
 #include "runtime_types.h"
 
 template<typename T>
@@ -20,6 +21,10 @@ struct DataEncoder<T *>
 {
     void encode(std::shared_ptr<DataImage> data_image, T* t)
     {
+        if(t == nullptr){
+            return;
+        }
+
         data_image->data.resize(sizeof(T));
         memcpy(data_image->data.data(), t, sizeof(T));
     }
@@ -53,22 +58,56 @@ struct DataDecoder<T *>
     }
 };
 
-template<typename _T, typename _TypeName, typename _VarName, typename ..._Rest>
-std::shared_ptr<DataImage> encodeData(_T var, _TypeName type_name, _VarName var_name, _Rest ...rest)
+struct AutoEncoder
 {
-    std::shared_ptr<DataImage> data_image = std::make_shared<DataImage>();
-    data_image->type_name = type_name;
-    data_image->var_name = var_name;
+    template<typename _T, typename _TypeName, typename _VarName, typename ..._Rest>
+    std::shared_ptr<DataImage> encode(_T var, _TypeName type_name, _VarName var_name, _Rest ...rest)
+    {
+        std::shared_ptr<DataImage> data_image = std::make_shared<DataImage>();
+        data_image->type_name = type_name;
+        data_image->var_name = var_name;
 
-    DataEncoder<_T>().encode(data_image, var);
-    data_image->next = encodeData(rest...);
-    return data_image;
-}
+        auto encoder = std::make_shared<DataEncoder<_T>>();
+        encoder->encode(data_image, var);
+        reserver_.push_back([=](){ return encoder.get(); });
 
-std::shared_ptr<DataImage> encodeData()
+        data_image->next = encode(rest...);
+        return data_image;
+    }
+
+private:
+    std::shared_ptr<DataImage> encode()
+    {
+        return nullptr;
+    }
+
+    std::list<std::function<void *()>> reserver_;
+};
+
+struct AutoDecoder
 {
-    return nullptr;
-}
+    template<typename _T, typename ..._Rest>
+    void decode(std::shared_ptr<DataImage> data_image, _T var, _Rest ...rest)
+    {
+        static_assert (std::is_pointer<_T>::value, "must be a pointer");
+        if(data_image == nullptr){
+            return;
+        }
+
+        auto decoder = std::make_shared<DataDecoder<typename std::remove_pointer<_T>::type>>();
+        reserver_.push_back([=](){ return decoder.get(); });
+
+        *var = decoder->decode(data_image);
+        decode(data_image->next, rest...);
+    }
+
+private:
+    void decode(std::shared_ptr<DataImage>)
+    {
+    }
+
+    std::list<std::function<void *()>> reserver_;
+};
 
 #define MakeData(data) data, typeid(data).name(), #data
 #define MakePtrData(data, size) std::pair<const void *, int>(data, size), typeid(data).name(), #data

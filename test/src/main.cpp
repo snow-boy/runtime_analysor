@@ -55,33 +55,29 @@ void test01(int argc, char **argv)
     }
 }
 
-//template <typename T, typename std::enable_if<!std::is_pointer<T>::value, T>::type>
-//class A
-//{
-//public:
-//    void test(T v)
-//    {
-//        std::cout << v << std::endl;
-//    }
-//};
+void test02()
+{
+    int a = 1;
+    int b = 2;
 
-//template <typename T, typename std::enable_if<std::is_pointer<T>::value, T>::type>
-//class A
-//{
-//public:
-//    void test(T v)
-//    {
-//        std::cout << v << std::endl;
-//    }
-//};
+    std::cout << a << ", " << b << std::endl;
 
+    auto data_image = AutoEncoder().encode(MakeData(a), MakeData(b));
+    a = 0;
+    b = 0;
+
+    std::cout << a << ", " << b << std::endl;
+
+    AutoDecoder().
+    decode(data_image, &a, &b);
+
+    std::cout << a << ", " << b << std::endl;
+}
 
 int main(int argc, char **argv)
 {
 //    test01(argc, argv);
-
-    std::vector<int> data;
-    std::cout << data.data() << std::endl;
+    test02();
 
     std::cin.ignore();
     return 0;
