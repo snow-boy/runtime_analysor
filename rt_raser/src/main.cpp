@@ -52,7 +52,7 @@ void print(std::shared_ptr<ClassCallImage> call_image)
     if(call_image->call_image->ret != nullptr){
         print(call_image->call_image->ret);
     }
-    std::cout << call_image->call_image->fun_name << "( ";
+    std::cout << " " << call_image->call_image->fun_name << "( ";
     int arg_index = 0;
     for(auto arg : call_image->call_image->arg_list){
         if(arg_index > 0){

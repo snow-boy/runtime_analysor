@@ -65,8 +65,10 @@ std::string buildInvoker(const ClassCallImageList & call_list)
         stream << makeTab(2) << "{" << std::endl;
         for(std::shared_ptr<ClassCallImage> class_call_image: call_list.getCallImagesByClass(class_name))
         {
-            stream << makeTab(3) << "if(std::string(class_call_image->call_image->fun_name) == " << class_call_image->call_image->fun_name
-                   << "){" << std::endl;
+            stream << makeTab(3) << "if(std::string(class_call_image->call_image->fun_name) == \"" << class_call_image->call_image->fun_name
+                   << "\"){" << std::endl;
+
+            auto it = class_call_image->call_image->arg_list.begin();
             for(size_t i = 0; i < class_call_image->call_image->arg_list.size(); ++i)
             {
                 if(i == 0){
@@ -74,16 +76,17 @@ std::string buildInvoker(const ClassCallImageList & call_list)
                 }
 
                 stream << makeTab(4) << "auto arg" << i << " = *it;" << std::endl;
+                stream << makeTab(4) << "DataDecoder<" << (*it)->type_name << "> decoder" << i << ";" << std::endl;
+                ++it;
+
                 stream << makeTab(4) << "it++;" << std::endl;
             }
             stream << makeTab(4) << "instance_->"
                    << class_call_image->call_image->fun_name << "(";
 
-            auto it = class_call_image->call_image->arg_list.begin();
             for(size_t i = 0; i < class_call_image->call_image->arg_list.size(); ++i)
             {
-                stream << "DataDecoder<" << (*it)->type_name << ">().decode(";
-                it++;
+                stream << "decoder" << i << ".decode(";
                 stream << "arg" << i;
                 stream << ")";
                 if(i != class_call_image->call_image->arg_list.size() - 1){
@@ -91,7 +94,7 @@ std::string buildInvoker(const ClassCallImageList & call_list)
                 }
             }
 
-            stream << ")" << std::endl;
+            stream << ");" << std::endl;
             stream << makeTab(4) << "break;" << std::endl;
             stream << makeTab(3) << "}" << std::endl;
         }
@@ -118,8 +121,10 @@ std::string buildInvoker(const CallImageList & call_list)
     stream << makeTab(1) << "{" << std::endl;
     for(std::shared_ptr<CallImage> call_image: call_list)
     {
-        stream << makeTab(2) << "if(std::string(class_call_image->call_image->fun_name) == " << call_image->fun_name
-               << "){" << std::endl;
+        stream << makeTab(2) << "if(std::string(class_call_image->call_image->fun_name) == \"" << call_image->fun_name
+               << "\"){" << std::endl;
+
+        auto it = call_image->arg_list.begin();
         for(size_t i = 0; i < call_image->arg_list.size(); ++i)
         {
             if(i == 0){
@@ -127,16 +132,17 @@ std::string buildInvoker(const CallImageList & call_list)
             }
 
             stream << makeTab(3) << "auto arg" << i << " = *it;" << std::endl;
+            stream << makeTab(3) << "DataDecoder<" << (*it)->type_name << "> decoder" << i << ";" << std::endl;
+            ++it;
+
             stream << makeTab(3) << "it++;" << std::endl;
         }
         stream << makeTab(3) << "instance_->"
                << call_image->fun_name << "(";
 
-        auto it = call_image->arg_list.begin();
         for(size_t i = 0; i < call_image->arg_list.size(); ++i)
         {
-            stream << "DataDecoder<" << (*it)->type_name << ">().decode(";
-            it++;
+            stream << "decoder" << i << ".decode(";
             stream << "arg" << i;
             stream << ")";
             if(i != call_image->arg_list.size() - 1){
@@ -144,7 +150,7 @@ std::string buildInvoker(const CallImageList & call_list)
             }
         }
 
-        stream << ")" << std::endl;
+        stream << ");" << std::endl;
         stream << makeTab(3) << "break;" << std::endl;
         stream << makeTab(2) << "}" << std::endl;
     }
@@ -167,7 +173,7 @@ void buildInvoker(const std::string &file_path,
     }
 
     stream << "#pragma once" << std::endl;
-    stream << "template<> class ClassInvoker{};" << std::endl;
+    stream << "template<typename T> class ClassInvoker{};" << std::endl;
     stream << buildInvoker(class_call_image_list) << std::endl;
     stream << buildInvoker(call_image_list) << std::endl;
 
@@ -178,7 +184,7 @@ void buildInvoker(const std::string &file_path,
               << "    void addInstance(T *instance)" << std::endl
               << "    {" << std::endl
               << "        instance_map_[typeid (T).name()] = [=](std::shared_ptr<ClassCallImage> call_image){" << std::endl
-              << "            ClassInvoker<T>(instance)->invoke(call_image);" << std::endl
+              << "            ClassInvoker<T>(instance).invoke(call_image);" << std::endl
               << "        };" << std::endl
               << "    }" << std::endl
               << "    void invoke(std::shared_ptr<ClassCallImage> call_image)" << std::endl
