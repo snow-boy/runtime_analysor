@@ -67,7 +67,10 @@ void RuntimeFileWriter::write(std::shared_ptr<CallImage> call_image)
         CallImageHeader call_image_header;
         strcpy_s(call_image_header.fun_name, call_image->fun_name.data());
         call_image_header.thread_id = call_image->thread_id;
-        call_image_header.timestamp = call_image->timestamp;
+        call_image_header.enter_time = call_image->enter_time;
+        call_image_header.leave_time = call_image->leave_time;
+        call_image_header.enter_tick = call_image->enter_tick;
+        call_image_header.leave_tick = call_image->leave_tick;
         call_image_header_node->setData(reinterpret_cast<char *>(&call_image_header), sizeof(call_image_header));
         call_image_node->appendChild(call_image_header_node);
     }
@@ -109,7 +112,10 @@ void RuntimeFileWriter::write(std::shared_ptr<ClassCallImage> class_call_image)
         CallImageHeader &call_image_header = class_call_image_header.call_image_header;
         strcpy_s(call_image_header.fun_name, call_image->fun_name.data());
         call_image_header.thread_id = call_image->thread_id;
-        call_image_header.timestamp = call_image->timestamp;
+        call_image_header.enter_time = call_image->enter_time;
+        call_image_header.leave_time = call_image->leave_time;
+        call_image_header.enter_tick = call_image->enter_tick;
+        call_image_header.leave_tick = call_image->leave_tick;
         call_image_header_node->setData(reinterpret_cast<char *>(&class_call_image_header), sizeof(class_call_image_header));
         call_image_node->appendChild(call_image_header_node);
     }

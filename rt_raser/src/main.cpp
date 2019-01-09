@@ -19,7 +19,8 @@ void print(std::shared_ptr<DataImage> data_image)
 
 void print(std::shared_ptr<CallImage> call_image)
 {
-    std::cout << call_image->timestamp << " ";
+    std::cout << call_image->enter_tick << " ";
+    std::cout << call_image->leave_tick << " ";
     if(call_image->ret != nullptr){
         print(call_image->ret);
     }
@@ -46,7 +47,8 @@ void print(std::shared_ptr<CallImage> call_image)
 
 void print(std::shared_ptr<ClassCallImage> call_image)
 {
-    std::cout << call_image->call_image->timestamp << " ";
+    std::cout << call_image->call_image->enter_tick << " ";
+    std::cout << call_image->call_image->leave_tick << " ";
     std::cout << call_image->class_name << " ";
     std::cout << call_image->instance_id << " ";
     if(call_image->call_image->ret != nullptr){
@@ -89,13 +91,13 @@ int main(int argc, char **argv)
     CallImageList call_image_list = rt_reader.callImageList();
 
     for(std::shared_ptr<CallImage> call_image : call_image_list){
-        call_queue[call_image->timestamp] = std::make_pair(call_image, nullptr);
+        call_queue[call_image->enter_tick] = std::make_pair(call_image, nullptr);
     }
 
     ClassCallImageList class_call_image_list = rt_reader.classCallImageList();
 
     for(std::shared_ptr<ClassCallImage> call_image : class_call_image_list){
-        call_queue[call_image->call_image->timestamp] = std::make_pair(nullptr, call_image);
+        call_queue[call_image->call_image->enter_tick] = std::make_pair(nullptr, call_image);
     }
 
     for(auto e: call_queue){

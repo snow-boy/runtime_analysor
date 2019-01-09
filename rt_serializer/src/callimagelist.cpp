@@ -20,7 +20,7 @@ void CallImageList::sortByTime()
     std::map<int64_t, std::list<std::shared_ptr<CallImage>>> sorted;
 
     for(std::shared_ptr<CallImage> e : *this){
-        sorted[e->timestamp].push_back(e);
+        sorted[e->enter_time].push_back(e);
     }
 
     clear();

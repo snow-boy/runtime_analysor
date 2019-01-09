@@ -67,7 +67,10 @@ static std::shared_ptr<CallImage> toCallImage(std::shared_ptr<BlockNode> block_n
         {
             CallImageHeader call_image_header = *reinterpret_cast<const CallImageHeader *>(child->blockData().data());
             call_image->fun_name = call_image_header.fun_name;
-            call_image->timestamp = call_image_header.timestamp;
+            call_image->enter_time = call_image_header.enter_time;
+            call_image->leave_time = call_image_header.leave_time;
+            call_image->enter_tick = call_image_header.enter_tick;
+            call_image->leave_tick = call_image_header.leave_tick;
             call_image->thread_id = call_image_header.thread_id;
             break;
         }
@@ -122,7 +125,10 @@ static std::shared_ptr<ClassCallImage> toClassCallImage(std::shared_ptr<BlockNod
 
             CallImageHeader &call_image_header = class_call_image_header.call_image_header;
             call_image->fun_name = call_image_header.fun_name;
-            call_image->timestamp = call_image_header.timestamp;
+            call_image->enter_time = call_image_header.enter_time;
+            call_image->leave_time = call_image_header.leave_time;
+            call_image->enter_tick = call_image_header.enter_tick;
+            call_image->leave_tick = call_image_header.leave_tick;
             call_image->thread_id = call_image_header.thread_id;
             break;
         }

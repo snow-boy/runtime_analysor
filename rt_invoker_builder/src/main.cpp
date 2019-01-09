@@ -207,6 +207,8 @@ int main(int argc, char **argv)
         std::string rt_path = argv[1];
         std::string out_path = argv[2];
 
+        std::cout << rt_path << " found" << std::endl;
+
         std::map<std::string, std::shared_ptr<CallImage>> call_image_set;
         std::map<std::string, std::shared_ptr<ClassCallImage>> class_call_image_set;
 
@@ -252,6 +254,8 @@ int main(int argc, char **argv)
         std::map<std::string, std::shared_ptr<ClassCallImage>> class_call_image_set;
         for(std::string &file_path: files)
         {
+            std::cout << file_path << " found" << std::endl;
+
             RuntimeFileReader rt_reader;
             if(!rt_reader.read(file_path)){
                 std::cerr << "can not open this file: " << argv[1] << std::endl;

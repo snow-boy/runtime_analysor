@@ -19,6 +19,11 @@ public:
         *this = other;
     }
 
+    void setLeave()
+    {
+        std::static_pointer_cast<CallImageEx>(this->call_image)->setLeave();
+    }
+
     template<typename ... _Args>
     void setReturn(_Args ... args)
     {
